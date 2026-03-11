@@ -20,9 +20,15 @@ public class Injector {
         return injector;
     }
 
+    Injector() {
+        implementationsMap.put(FileReaderService.class, FileReaderServiceImpl.class);
+        implementationsMap.put(ProductParser.class, ProductParserImpl.class);
+        implementationsMap.put(ProductService.class, ProductServiceImpl.class);
+    }
+
     public Object getInstance(Class<?> interfaceClazz) {
 
-        Object clazzImplementationInstance = null;
+
         Class<?> clazz = findImplementationClass(interfaceClazz);
         if (!clazz.isAnnotationPresent(Component.class)) {
             throw new RuntimeException("No Component annotation found for "
@@ -30,11 +36,11 @@ public class Injector {
         }
         Field[] declaredFields = clazz.getDeclaredFields();
         Object fieldInstance = null;
+        Object clazzImplementationInstance = createNewInstance(clazz);
         for (Field field : declaredFields) {
             if (field.isAnnotationPresent(Inject.class)) {
-                fieldInstance = getInstance(field.getType());
-                clazzImplementationInstance = createNewInstance(clazz);
                 field.setAccessible(true);
+                fieldInstance = getInstance(field.getType());
 
                 try {
                     field.set(clazzImplementationInstance, fieldInstance);
@@ -72,9 +78,7 @@ public class Injector {
     }
 
     private Class<?> findImplementationClass(Class<?> interfaceClazz) {
-        implementationsMap.put(FileReaderService.class, FileReaderServiceImpl.class);
-        implementationsMap.put(ProductParser.class, ProductParserImpl.class);
-        implementationsMap.put(ProductService.class, ProductServiceImpl.class);
+
         if (interfaceClazz.isInterface()) {
             return implementationsMap.get(interfaceClazz);
         }
