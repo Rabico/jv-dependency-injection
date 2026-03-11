@@ -2,7 +2,6 @@ package mate.academy.lib;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import mate.academy.service.FileReaderService;
@@ -15,6 +14,7 @@ import mate.academy.service.impl.ProductServiceImpl;
 public class Injector {
     private static final Injector injector = new Injector();
     private Map<Class<?>, Object> services = new HashMap<>();
+    private Map<Class<?>, Class<?>> implementationsMap = new HashMap<>();
 
     public static Injector getInjector() {
         return injector;
@@ -28,10 +28,11 @@ public class Injector {
             throw new RuntimeException("No Component annotation found for "
                     + interfaceClazz.getName());
         }
-        Field[] declaredFields = interfaceClazz.getDeclaredFields();
+        Field[] declaredFields = clazz.getDeclaredFields();
+        Object fieldInstance = null;
         for (Field field : declaredFields) {
             if (field.isAnnotationPresent(Inject.class)) {
-                Object fieldInstance = getInstance(field.getType());
+                fieldInstance = getInstance(field.getType());
                 clazzImplementationInstance = createNewInstance(clazz);
                 field.setAccessible(true);
 
@@ -62,16 +63,15 @@ public class Injector {
             constructor = clazz.getConstructor();
             Object object = null;
             object = constructor.newInstance();
+            services.put(clazz, object);
             return object;
-        } catch (InstantiationException | IllegalAccessException
-                 | InvocationTargetException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             throw new RuntimeException("Can't create a new instance of "
                     + clazz.getName(), e);
         }
     }
 
     private Class<?> findImplementationClass(Class<?> interfaceClazz) {
-        Map<Class<?>, Class<?>> implementationsMap = new HashMap<>();
         implementationsMap.put(FileReaderService.class, FileReaderServiceImpl.class);
         implementationsMap.put(ProductParser.class, ProductParserImpl.class);
         implementationsMap.put(ProductService.class, ProductServiceImpl.class);
